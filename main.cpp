@@ -7,11 +7,17 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-    string file("../npidata_pfile_20050523-20190512.csv");
-    CSVLogger firstReader(file, 38);
-    firstReader.AddStateFilters({"CA", "OK", "VA"});
-    firstReader.ReadAndStorageCSV();
+    if(argc == 2)
+    {
+	std::string file(argv[1]);
+	CSVLogger firstReader(file, 38);
+	firstReader.AddStateFilters({"CA", "OK", "VA"});
+    	firstReader.ReadAndStorageCSV();
+    }
+    else
+    {
+	std::cout << "No CSV file received, please add it as an argument" << std::endl;
+    }
 
     return 0;
-
 }

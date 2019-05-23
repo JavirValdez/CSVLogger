@@ -7,9 +7,6 @@ namespace FieldNames
 {
     const int BUSINESS_STATE = 31;
     const int LAST_UPDATE_DATE = 37;
-}
-namespace
-{
     const int NUMBER_OF_ALPHABET_LETTERS = 26;
 }
 
@@ -22,6 +19,7 @@ CSVLogger::CSVLogger(std::string& csvPath, int numberOfFields):
 
 CSVLogger::~CSVLogger()
 {
+	delete CSVStream;
 }
 
 void CSVLogger::SetNumberOfFields(int numberOfFields)
@@ -29,7 +27,7 @@ void CSVLogger::SetNumberOfFields(int numberOfFields)
     NumberOfFields = numberOfFields;
 }
 
-int CSVLogger::GetNumberOfFields()
+int CSVLogger::GetNumberOfFields() const
 {
     return NumberOfFields;
 }
@@ -44,21 +42,22 @@ void CSVLogger::ReadAndStorageCSV()
     {
         std::cout << "Success opening file"  << std::endl;
         std::string line;
-        std::getline(*CSVStream, line);
-        int counter = 0;
-        while(std::getline(*CSVStream, line) && counter < 100)
+        //this getline gets rid of the header title names
+	std::getline(*CSVStream, line);
+        while(std::getline(*CSVStream, line))
         {
+	    //creates a stream of each line and extracts each field by searching for ','
             std::stringstream lineStream(line);
             std::string field;
             std::vector <std::string> fields;
             for(int currentField = 0; currentField < NumberOfFields && getline(lineStream, field, ','); currentField++)
             {
+		//erase the quotes of each field and adds the string to a vector
                 field.erase(field.begin());
                 field.erase(field.end()-1);
                 fields.push_back(field);
             }
             FilterAndLogUserData(fields);
-            counter++;
         }
         CSVStream->close();
     }
@@ -75,12 +74,14 @@ void CSVLogger::FilterAndLogUserData(std::vector <std::string>& userData)
 {
     for(const std::string& state: StatesFilter)
     {
+	//Applies the states filter
         if(userData.at(FieldNames::BUSINESS_STATE) == state)
         {
             std::string nppes("NPPES:");
             std::string lastUpdateDate = userData.at(FieldNames::LAST_UPDATE_DATE);
             std::replace(lastUpdateDate.begin(), lastUpdateDate.end(), '/', ':');
-            for(const std::string& field: userData)
+            //Gets the key and the value for each field
+	    for(const std::string& field: userData)
             {
                 std::string redisKey = nppes + lastUpdateDate + NPIHeaderName(&field - &userData.at(0)) + userData.at(0);
 
@@ -93,12 +94,19 @@ void CSVLogger::FilterAndLogUserData(std::vector <std::string>& userData)
 
 std::string CSVLogger::NPIHeaderName(int headerNumber)
 {
+    //Generates an abstraction of each field name to match with:
+    //0 -> :COLA:
+    //1 -> :COLB:
+    //...
+    //25 -> :COLZ:
+    //26 -> :COLAA:
+    //...
     std::string headerName(":COL");
-    int overloaded = headerNumber / NUMBER_OF_ALPHABET_LETTERS;
+    int overloaded = headerNumber / FieldNames::NUMBER_OF_ALPHABET_LETTERS;
     if(overloaded)
     {
         headerName += char('A' + overloaded - 1);
-        headerName += char('A' + (headerNumber - (NUMBER_OF_ALPHABET_LETTERS * overloaded)));
+        headerName += char('A' + (headerNumber - (FieldNames::NUMBER_OF_ALPHABET_LETTERS * overloaded)));
     }
     else
     {
