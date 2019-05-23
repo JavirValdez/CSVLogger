@@ -7,11 +7,11 @@
 class CSVLogger
 {
 public:
-    CSVLogger(std::string& csvPath, int numberOfFields = 0);
+    CSVLogger(std::string& csvPath, unsigned int numberOfFields = 0);
     virtual ~CSVLogger();
     //Number of fields that are going to be saved into the database
     //Current Min number is 38
-    void SetNumberOfFields(int numberOfFields);
+    void SetNumberOfFields(unsigned int numberOfFields);
     //Number of fields that are going to be saved into the database
     int GetNumberOfFields() const;
     //reads the passed file and writes into the redis database
@@ -22,12 +22,11 @@ public:
 protected:
 
 private:
-    void FilterAndLogUserData(std::vector <std::string>& userData);
+    void FilterAndLogUserData(std::string& line);
     std::string NPIHeaderName(int headerNumber);
 
-
     std::string& CSVPath;
-    int NumberOfFields;
+    unsigned int NumberOfFields;
     std::ifstream* CSVStream;
     std::vector <std::string> StatesFilter;
 };

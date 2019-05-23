@@ -2,6 +2,9 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <iterator>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/classification.hpp>
 
 namespace FieldNames
 {
@@ -10,7 +13,7 @@ namespace FieldNames
     const int NUMBER_OF_ALPHABET_LETTERS = 26;
 }
 
-CSVLogger::CSVLogger(std::string& csvPath, int numberOfFields):
+CSVLogger::CSVLogger(std::string& csvPath, unsigned int numberOfFields):
     CSVPath(csvPath),
     NumberOfFields(numberOfFields),
     CSVStream(new std::ifstream(CSVPath))
@@ -22,7 +25,7 @@ CSVLogger::~CSVLogger()
 	delete CSVStream;
 }
 
-void CSVLogger::SetNumberOfFields(int numberOfFields)
+void CSVLogger::SetNumberOfFields(unsigned int numberOfFields)
 {
     NumberOfFields = numberOfFields;
 }
@@ -43,21 +46,10 @@ void CSVLogger::ReadAndStorageCSV()
         std::cout << "Success opening file"  << std::endl;
         std::string line;
         //this getline gets rid of the header title names
-	std::getline(*CSVStream, line);
+	    std::getline(*CSVStream, line);
         while(std::getline(*CSVStream, line))
         {
-	    //creates a stream of each line and extracts each field by searching for ','
-            std::stringstream lineStream(line);
-            std::string field;
-            std::vector <std::string> fields;
-            for(int currentField = 0; currentField < NumberOfFields && getline(lineStream, field, ','); currentField++)
-            {
-		//erase the quotes of each field and adds the string to a vector
-                field.erase(field.begin());
-                field.erase(field.end()-1);
-                fields.push_back(field);
-            }
-            FilterAndLogUserData(fields);
+            FilterAndLogUserData(line);
         }
         CSVStream->close();
     }
@@ -69,28 +61,47 @@ void CSVLogger::AddStateFilters(std::vector <std::string> stateFilter)
     StatesFilter = stateFilter;
 }
 
-
-void CSVLogger::FilterAndLogUserData(std::vector <std::string>& userData)
+void CSVLogger::FilterAndLogUserData(std::string& line)
 {
-    for(const std::string& state: StatesFilter)
-    {
-	//Applies the states filter
-        if(userData.at(FieldNames::BUSINESS_STATE) == state)
-        {
-            std::string nppes("NPPES:");
-            std::string lastUpdateDate = userData.at(FieldNames::LAST_UPDATE_DATE);
-            std::replace(lastUpdateDate.begin(), lastUpdateDate.end(), '/', ':');
-            //Gets the key and the value for each field
-	    for(const std::string& field: userData)
-            {
-                std::string redisKey = nppes + lastUpdateDate + NPIHeaderName(&field - &userData.at(0)) + userData.at(0);
+	std::vector<std::string> userData;
 
-                std::cout << redisKey << ":    " << field << std::endl;
+	//Extract the fields from the line
+
+	//First field starts at 1 to avoid the first quote mark
+	unsigned int fieldStart = 1;
+	//Looks for every iteration of "," to detect each field and saves it on the vector
+	for(unsigned int start = 0; start < line.length() && userData.size() < NumberOfFields; start++)
+    {
+        if(line[start] == '\"' && line[start + 1] == ',' && line[start + 2] == '\"')
+        {
+            userData.push_back(line.substr(fieldStart, start-fieldStart));
+            start += 2;
+            fieldStart = start + 1;
+        }
+    }
+
+    //Check that the userData vector is the correct size otherwise it may have a segmentation fault
+    if(userData.size() == NumberOfFields)
+    {
+        for(const std::string& state: StatesFilter)
+        {
+	    //Applies the states filter
+            if(userData.at(FieldNames::BUSINESS_STATE) == state)
+            {
+                std::string nppes("NPPES:");
+                //std::string lastUpdateDate = userData.at(FieldNames::LAST_UPDATE_DATE);
+                //std::replace(lastUpdateDate.begin(), lastUpdateDate.end(), '/', ':');
+                //Gets the key and the value for each field
+    	        for(const std::string& field: userData)
+                {
+                    std::string redisKey = nppes + NPIHeaderName(&field - &userData.at(0)) + userData.at(0);
+
+                  //  std::cout << redisKey << ":    " << field << std::endl;
+                }
             }
         }
     }
 }
-
 
 std::string CSVLogger::NPIHeaderName(int headerNumber)
 {
@@ -115,3 +126,4 @@ std::string CSVLogger::NPIHeaderName(int headerNumber)
     headerName += ":";
     return headerName;
 }
+
