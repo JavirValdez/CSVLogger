@@ -8,6 +8,7 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <redox.hpp>
 
 namespace FieldNames
 {
@@ -15,6 +16,8 @@ namespace FieldNames
     const int LAST_UPDATE_DATE = 37;
     const int NUMBER_OF_ALPHABET_LETTERS = 26;
 }
+
+using namespace redox;
 
 CSVLogger::CSVLogger(std::string& csvPath, std::string& date, unsigned int numberOfFields):
     CSVPath(csvPath),
@@ -93,15 +96,25 @@ void CSVLogger::FilterAndLogUserData(std::string& line)
 	    //Applies the states filter
             if(userData.at(FieldNames::BUSINESS_STATE) == state)
             {
-                std::string nppes("NPPES:");
+		Redox rdx;
+                if(!rdx.connect("localhost", 6379)) 
+		{
+                    DEBUG_MSG("Unable to open redis database");
+		    break;
+		}
+		
+		std::string nppes("NPPES:");
                 //std::string lastUpdateDate = userData.at(FieldNames::LAST_UPDATE_DATE);
                 //std::replace(lastUpdateDate.begin(), lastUpdateDate.end(), '/', ':');
                 //Gets the key and the value for each field
     	        for(const std::string& field: userData)
                 {
                     std::string redisKey = nppes + Date + NPIHeaderName(&field - &userData.at(0)) + userData.at(0);
-                    DEBUG_MSG(redisKey << ' ' << field);
+                    
+		    rdx.set(redisKey, field);
+		    DEBUG_MSG(redisKey << ' ' << field);
                 }
+		rdx.disconnect();
             }
         }
     }
