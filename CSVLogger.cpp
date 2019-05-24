@@ -1,10 +1,13 @@
+#ifdef DEBUG
+#define DEBUG_MSG(str) do { std::cout << str << std::endl; } while( false )
+#else
+#define DEBUG_MSG(str) do { } while ( false )
+#endif
+
 #include "CSVLogger.h"
 #include <fstream>
 #include <sstream>
 #include <algorithm>
-#include <iterator>
-#include <boost/algorithm/string/split.hpp>
-#include <boost/algorithm/string/classification.hpp>
 
 namespace FieldNames
 {
@@ -13,8 +16,9 @@ namespace FieldNames
     const int NUMBER_OF_ALPHABET_LETTERS = 26;
 }
 
-CSVLogger::CSVLogger(std::string& csvPath, unsigned int numberOfFields):
+CSVLogger::CSVLogger(std::string& csvPath, std::string& date, unsigned int numberOfFields):
     CSVPath(csvPath),
+    Date(date),
     NumberOfFields(numberOfFields),
     CSVStream(new std::ifstream(CSVPath))
 {
@@ -45,9 +49,10 @@ void CSVLogger::ReadAndStorageCSV()
     {
         std::cout << "Success opening file"  << std::endl;
         std::string line;
-        //this getline gets rid of the header title names
-	    std::getline(*CSVStream, line);
-        while(std::getline(*CSVStream, line))
+        //This getline gets rid of the header title names
+        std::getline(*CSVStream, line);
+        //While there are still lines in the CSV file
+	while(std::getline(*CSVStream, line))
         {
             FilterAndLogUserData(line);
         }
@@ -94,9 +99,8 @@ void CSVLogger::FilterAndLogUserData(std::string& line)
                 //Gets the key and the value for each field
     	        for(const std::string& field: userData)
                 {
-                    std::string redisKey = nppes + NPIHeaderName(&field - &userData.at(0)) + userData.at(0);
-
-                  //  std::cout << redisKey << ":    " << field << std::endl;
+                    std::string redisKey = nppes + Date + NPIHeaderName(&field - &userData.at(0)) + userData.at(0);
+                    DEBUG_MSG(redisKey << ' ' << field);
                 }
             }
         }

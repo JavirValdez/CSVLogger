@@ -7,7 +7,7 @@
 class CSVLogger
 {
 public:
-    CSVLogger(std::string& csvPath, unsigned int numberOfFields = 0);
+    CSVLogger(std::string& csvPath, std::string& date, unsigned int numberOfFields = 0);
     virtual ~CSVLogger();
     //Number of fields that are going to be saved into the database
     //Current Min number is 38
@@ -26,6 +26,7 @@ private:
     std::string NPIHeaderName(int headerNumber);
 
     std::string& CSVPath;
+    std::string& Date;
     unsigned int NumberOfFields;
     std::ifstream* CSVStream;
     std::vector <std::string> StatesFilter;
