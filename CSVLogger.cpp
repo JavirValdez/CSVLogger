@@ -17,7 +17,6 @@ namespace FieldNames
     const int NUMBER_OF_ALPHABET_LETTERS = 26;
 }
 
-using namespace redox;
 
 CSVLogger::CSVLogger(std::string& csvPath, std::string& date, unsigned int numberOfFields):
     CSVPath(csvPath),
@@ -54,11 +53,19 @@ void CSVLogger::ReadAndStorageCSV()
         std::string line;
         //This getline gets rid of the header title names
         std::getline(*CSVStream, line);
-        //While there are still lines in the CSV file
+	
+        if(!rdx.connect("localhost", 6379))
+        {
+            DEBUG_MSG("Unable to open redis database");
+        }
+
+	//While there are still lines in the CSV file
 	while(std::getline(*CSVStream, line))
         {
             FilterAndLogUserData(line);
         }
+		
+	rdx.disconnect();
         CSVStream->close();
     }
 
@@ -96,12 +103,6 @@ void CSVLogger::FilterAndLogUserData(std::string& line)
 	    //Applies the states filter
             if(userData.at(FieldNames::BUSINESS_STATE) == state)
             {
-		Redox rdx;
-                if(!rdx.connect("localhost", 6379)) 
-		{
-                    DEBUG_MSG("Unable to open redis database");
-		    break;
-		}
 		
 		std::string nppes("NPPES:");
                 //std::string lastUpdateDate = userData.at(FieldNames::LAST_UPDATE_DATE);
@@ -114,7 +115,6 @@ void CSVLogger::FilterAndLogUserData(std::string& line)
 		    rdx.set(redisKey, field);
 		    DEBUG_MSG(redisKey << ' ' << field);
                 }
-		rdx.disconnect();
             }
         }
     }

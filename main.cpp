@@ -12,7 +12,7 @@ int main(int argc, char *argv[])
        std::string file = {argv[1]};
        std::string date = {argv[2]};
        CSVLogger firstReader(file, date, 38);
-       firstReader.AddStateFilters({"CA", "OK", "VA"});
+       firstReader.AddStateFilters({"SC"});
        firstReader.ReadAndStorageCSV();
     }
     else
