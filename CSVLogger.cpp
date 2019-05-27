@@ -22,13 +22,15 @@ CSVLogger::CSVLogger(std::string& csvPath, std::string& date, unsigned int numbe
     CSVPath(csvPath),
     Date(date),
     NumberOfFields(numberOfFields),
-    CSVStream(new std::ifstream(CSVPath))
+    CSVStream(new std::ifstream(CSVPath)),
+    Rdx(new redox::Redox())
 {
 }
 
 CSVLogger::~CSVLogger()
 {
-	delete CSVStream;
+    delete CSVStream;
+    delete Rdx;
 }
 
 void CSVLogger::SetNumberOfFields(unsigned int numberOfFields)
@@ -43,9 +45,9 @@ int CSVLogger::GetNumberOfFields() const
 
 void CSVLogger::ReadAndStorageCSV()
 {
-    if(!CSVStream->is_open())
+    if(!CSVStream->is_open() || !Rdx->connect("localhost", 6379))
     {
-        std::cout << "ERROR: Unable to open " << CSVPath << std::endl;
+        std::cout << "ERROR: Unable to open " << CSVPath << "or unable to open redis database" << std::endl;
     }
     else
     {
@@ -54,18 +56,12 @@ void CSVLogger::ReadAndStorageCSV()
         //This getline gets rid of the header title names
         std::getline(*CSVStream, line);
 	
-        if(!rdx.connect("localhost", 6379))
-        {
-            DEBUG_MSG("Unable to open redis database");
-        }
-
-	//While there are still lines in the CSV file
-	while(std::getline(*CSVStream, line))
+        //While there are still lines in the CSV file
+        while(std::getline(*CSVStream, line))
         {
             FilterAndLogUserData(line);
         }
-		
-	rdx.disconnect();
+        Rdx->disconnect();
         CSVStream->close();
     }
 
@@ -105,14 +101,12 @@ void CSVLogger::FilterAndLogUserData(std::string& line)
             {
 		
 		std::string nppes("NPPES:");
-                //std::string lastUpdateDate = userData.at(FieldNames::LAST_UPDATE_DATE);
-                //std::replace(lastUpdateDate.begin(), lastUpdateDate.end(), '/', ':');
                 //Gets the key and the value for each field
     	        for(const std::string& field: userData)
                 {
                     std::string redisKey = nppes + Date + NPIHeaderName(&field - &userData.at(0)) + userData.at(0);
                     
-		    rdx.set(redisKey, field);
+		    Rdx->set(redisKey, field);
 		    DEBUG_MSG(redisKey << ' ' << field);
                 }
             }

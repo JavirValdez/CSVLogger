@@ -2,9 +2,11 @@
 #include <string>
 #include <vector>
 #include <iostream>
-#include <redox.hpp>
 
-using namespace redox;
+namespace redox
+{
+    class Redox;
+}
 
 class CSVLogger
 {
@@ -32,5 +34,5 @@ private:
     unsigned int NumberOfFields;
     std::ifstream* CSVStream;
     std::vector <std::string> StatesFilter;
-    Redox rdx;
+    redox::Redox* Rdx;
 };
