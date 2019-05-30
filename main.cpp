@@ -8,7 +8,9 @@
 //# provider csv file, extract a specified number of fields, and load the data    #
 //# into a Redis database.                                                        #
 //#                                                                               #
-//# OPTIONS: Each parameter will be used as a CSV file path to storage into the   #
+//# OPTIONS:                                                                      #
+//# -d - will delete the keys of the CSV file from the redis database             #
+//# Each parameter will be used as a CSV file path to storage into the            #
 //# database.				                                          #
 //#                                                                               #
 //# DEVELOPER: Javir Valdez                                                       #
@@ -41,10 +43,12 @@ int main(int argc, char *argv[])
 {
     if(argc > 1)
     {
-       if("-d" == argv[1])
+       //if you have the -d flag it will delete the keys of the redis database
+       if('-' == argv[1][0] && 'd' == argv[1][1])
        {
            for(int numberOfFiles = 2; numberOfFiles < argc; numberOfFiles++)
            { 
+	       std::cout << "deleting" << std::endl;
                std::string file = argv[numberOfFiles];
                CSVLogger firstReader(file, 38, CSVLogger::RedisOpEnum::DEL);
                firstReader.AddStateFilters({"SC"});
@@ -56,6 +60,7 @@ int main(int argc, char *argv[])
            //it reads and storage each CSV file passed as parameter
            for(int numberOfFiles = 1; numberOfFiles < argc; numberOfFiles++)
            { 
+	       std::cout << "setting" << std::endl;
                std::string file = argv[numberOfFiles];
                CSVLogger firstReader(file, 38);
                firstReader.AddStateFilters({"SC"});

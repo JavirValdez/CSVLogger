@@ -53,6 +53,9 @@ CSVLogger::CSVLogger(std::string& csvPath, unsigned int numberOfFields, RedisOpE
     Rdx(new redox::Redox()),
     RedisOperation(redisOperation)
 {
+    //adds ':' to the date to have this format: "yyyy:mm:dd"
+    Date.insert(4, ":");
+    Date.insert(7, ":");
 }
 
 CSVLogger::~CSVLogger()
@@ -136,13 +139,15 @@ void CSVLogger::FilterAndLogUserData(std::string& line)
 		    {
                         std::string redisKey = nppes + Date + NPIHeaderName(&field - &userData.at(0)) + userData.at(0);
 
-                        if(RedisOpEnum::SET == RedisOperation)
+                        //this writes into the database
+			if(RedisOpEnum::SET == RedisOperation)
 			{
-		        //    Rdx->set(redisKey, field);
+		            Rdx->set(redisKey, field);
 			}
+			//thise deletes the keys from the database
 			else if(RedisOpEnum::DEL == RedisOperation)
 			{
-			//    Rdx->del(redisKey);
+			    Rdx->del(redisKey);
 			}
 			DEBUG_MSG(redisKey << ' ' << field);
 		    }
