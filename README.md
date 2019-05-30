@@ -12,5 +12,8 @@ g++ main.cpp CSVLogger.cpp -std=c++11 -lredox -lev -lhiredis -D DEBUG
 Once the project is compiled you can run it with the command:
 ./a.out ../npidata_pfile_20050523-20190512.csv
 
+Options: -d
+you can also add a -d flag before the CSV paths to delete the data of that file from the database
+
 Note: The program requires the path of the csv files to storage on the database, it can be 1 or multiple files, you will also need to limit the number of fields that you want to save into the database, that is done inside the function main in the constructor of the CSVLogger, and you will find there the function to filter the states to save.
 
