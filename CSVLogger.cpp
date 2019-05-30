@@ -1,3 +1,30 @@
+//#*******************************************************************************#
+//#                                                                               #
+//# FILE: CSVLogger.cpp                                                           #
+//#                                                                               #
+//# DESCRIPTION: This is a source file for the CSV logger app, it contains the    #
+//# the logic to read an decript the CSV files and log them into a redis          #
+//# database.
+//#                                                                               #
+//# DEVELOPER: Javir Valdez                                                       #
+//# DEVELOPER PHONE: +52 (644) 451-1441                                           #
+//# DEVELOPER EMAIL: josejavirvaldez@gmail.com                                    #
+//#                                                                               #
+//# VERSION: 1.0                                                                  #
+//# CREATED DATE-TIME: 20190529-07:00 Central Time Zone USA                       #
+//#                                                                               #
+//# VERSION: 1.1                                                                  #
+//# REVISION DATE-TIME: YYYYMMDD-HH:MM                                            #
+//# DEVELOPER MAKING CHANGE: First_name Last_name                                 #
+//# DEVELOPER MAKING CHANGE: PHONE: +1 (XXX) XXX-XXXX                             #
+//# DEVELOPER MAKING CHANGE: EMAIL: first.last@email.com                          #
+//#                                                                               #
+//#/* Copyright (C) EOS BlockSmith, LLC   - All Rights Reserved                   #
+//# * Unauthorized copying of this file, via any medium is strictly prohibited    #
+//# * Proprietary and confidential.                                               #
+//# */                                                                            #
+//#*******************************************************************************#
+
 #ifdef DEBUG
 #define DEBUG_MSG(str) do { std::cout << str << std::endl; } while( false )
 #else
@@ -18,12 +45,13 @@ namespace FieldNames
 }
 
 
-CSVLogger::CSVLogger(std::string& csvPath, std::string& date, unsigned int numberOfFields):
+CSVLogger::CSVLogger(std::string& csvPath, unsigned int numberOfFields, RedisOpEnum redisOperation):
     CSVPath(csvPath),
-    Date(date),
+    Date(csvPath.substr(csvPath.find("-") + 1, 8)), //extracts the date from the file name
     NumberOfFields(numberOfFields),
     CSVStream(new std::ifstream(CSVPath)),
-    Rdx(new redox::Redox())
+    Rdx(new redox::Redox()),
+    RedisOperation(redisOperation)
 {
 }
 
@@ -51,7 +79,7 @@ void CSVLogger::ReadAndStorageCSV()
     }
     else
     {
-        std::cout << "Success opening file"  << std::endl;
+        std::cout << "Success opening file " << CSVPath << std::endl;
         std::string line;
         //This getline gets rid of the header title names
         std::getline(*CSVStream, line);
@@ -99,15 +127,25 @@ void CSVLogger::FilterAndLogUserData(std::string& line)
 	    //Applies the states filter
             if(userData.at(FieldNames::BUSINESS_STATE) == state)
             {
-		
 		std::string nppes("NPPES:");
                 //Gets the key and the value for each field
     	        for(const std::string& field: userData)
                 {
-                    std::string redisKey = nppes + Date + NPIHeaderName(&field - &userData.at(0)) + userData.at(0);
-                    
-		    Rdx->set(redisKey, field);
-		    DEBUG_MSG(redisKey << ' ' << field);
+		    //loads only the fields with data
+		    if(field.length())
+		    {
+                        std::string redisKey = nppes + Date + NPIHeaderName(&field - &userData.at(0)) + userData.at(0);
+
+                        if(RedisOpEnum::SET == RedisOperation)
+			{
+		        //    Rdx->set(redisKey, field);
+			}
+			else if(RedisOpEnum::DEL == RedisOperation)
+			{
+			//    Rdx->del(redisKey);
+			}
+			DEBUG_MSG(redisKey << ' ' << field);
+		    }
                 }
             }
         }
